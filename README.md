@@ -31,12 +31,13 @@ python3 remove_acc.py input.fasta accessions.txt | gzip > output.fasta.gz
 
 **Accession File Format:**
 ```
+# This is a comment - lines starting with # are ignored
 NP_001234567.1
 NP_444555666.1
 NP_987654321.2
 ```
 
-The script matches accessions against the first word in the FASTA header (the text immediately after the `>` character).
+The script matches accessions against the first word in the FASTA header (the text immediately after the `>` character). Empty lines and lines starting with `#` are ignored.
 
 ## Installation
 

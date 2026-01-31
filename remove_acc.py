@@ -16,6 +16,7 @@ def read_accessions_to_remove(accession_file):
     
     Args:
         accession_file: Path to file containing accession numbers (one per line)
+                       Lines starting with '#' are treated as comments and ignored.
     
     Returns:
         set: Set of accession numbers to remove
@@ -75,7 +76,8 @@ def process_fasta(input_fasta, output_fasta, accessions_to_remove):
                     
                     # Check if this accession should be removed
                     # Extract accession from header (first word after '>')
-                    accession = line.split()[0][1:] if len(line) > 1 else ''
+                    parts = line.split()
+                    accession = parts[0][1:] if len(parts) > 0 and len(parts[0]) > 1 else ''
                     skip_current = accession in accessions_to_remove
                     
                 elif current_header is not None:

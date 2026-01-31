@@ -1,0 +1,3 @@
+# Python requirements for kaiju_data_tools
+# Note: remove_acc.py uses only Python standard library
+# Add additional dependencies here as needed

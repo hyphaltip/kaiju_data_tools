@@ -150,8 +150,8 @@ def main():
     
     parser.add_argument(
         '--outfmt',
-        default='>%%a_%%T %%t\\n%%s',
-        help='Output format string (default: >%%a_%%T %%t\\n%%s)'
+        default='>%a_%T %t\\n%s',
+        help='Output format string (default: >%a_%T %t\\n%s)'
     )
     
     parser.add_argument(

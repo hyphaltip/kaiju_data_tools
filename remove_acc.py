@@ -78,8 +78,7 @@ def process_fasta(input_fasta, output_fasta, accessions_to_remove):
                     # Extract accession from header (first word after '>')
                     parts = line.split()
                     accession = parts[0][1:] if len(parts) > 0 and len(parts[0]) > 1 else ''
-                    skip_current = accession in accessions_to_remove
-                    
+                    skip_current = accession in accessions_to_remove or "_".join(accession.split('_')[0:2]) in accessions_to_remove
                 elif current_header is not None:
                     # Append sequence line
                     current_sequence.append(line)

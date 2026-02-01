@@ -150,7 +150,7 @@ def main():
     newline="\n"
     parser.add_argument(
         '--outfmt',
-        default=f'>%a_%T %t{newline}%s',
+        default=f'>%a_%T [%S]{newline}%s',
         help='Output format string (default: )'
     )
     

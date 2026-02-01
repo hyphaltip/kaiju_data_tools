@@ -7,8 +7,7 @@ sequences from NCBI databases based on taxon IDs from a taxon list file.
 
 It replicates the functionality of:
     IDS=$(cut -f1 kaiju-taxonlistEuk.tsv | perl -p -e 's/\\n/,/g' | perl -p -e 's/,$/\\n/')
-    blastdbcmd -taxids $IDS -db $DB/swissprot -out $SCRATCH/euk_nr.txt -dbtype prot -outfmt ">%a_%T %t\\n%s" -target_only
-    perl -p -e 's/\\\\n/\\n/' $SCRATCH/euk_nr.txt > $SCRATCH/euk_nr.faa
+    blastdbcmd -taxids $IDS -db $DB/nr -out kaiju_db_euk_nr.faa -dbtype prot -outfmt ">%a_%T [%S]__\n__%s" -target_only
 """
 
 import argparse
@@ -48,9 +47,8 @@ def read_taxon_ids(input_file):
         print(f"Error reading input file: {e}", file=sys.stderr)
         sys.exit(1)
 
-
-def run_blastdbcmd(taxon_ids, db_path, output_file, dbtype='prot', 
-                   outfmt='>%a_%T %t\\n%s', target_only=True):
+def run_blastdbcmd(taxon_ids, db_path, output_file, dbtype='prot',
+                   outfmt='>%a_%T [%S]__\n__%s', target_only=True):
     """
     Run blastdbcmd to extract sequences based on taxon IDs.
     
@@ -59,9 +57,10 @@ def run_blastdbcmd(taxon_ids, db_path, output_file, dbtype='prot',
         db_path: Path to the BLAST database
         output_file: Output file path
         dbtype: Database type (default: 'prot')
-        outfmt: Output format string (default: '>%a_%T %t\\n%s')
+        outfmt: Output format string (default: '>%a_%T %t\n%s')
         target_only: Whether to use -target_only flag
     """
+
     cmd = [
         'blastdbcmd',
         '-taxids', taxon_ids,
@@ -70,13 +69,13 @@ def run_blastdbcmd(taxon_ids, db_path, output_file, dbtype='prot',
         '-dbtype', dbtype,
         '-outfmt', outfmt
     ]
-    
     if target_only:
         cmd.append('-target_only')
     
     try:
         print(f"Running: {' '.join(cmd)}", file=sys.stderr)
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        my_env = os.environ.copy()
+        result = subprocess.run(cmd,  env=my_env, check=True, capture_output=True, text=True)
         if result.stdout:
             print(result.stdout, file=sys.stderr)
         if result.stderr:
@@ -106,7 +105,7 @@ def convert_literal_newlines(input_file, output_file):
             content = f_in.read()
         
         # Replace literal \n with actual newlines
-        content = content.replace('\\n', '\n')
+        content = content.replace('__\\n__', '\n')
         
         with open(output_file, 'w') as f_out:
             f_out.write(content)
@@ -133,7 +132,7 @@ def main():
     parser.add_argument(
         '-d', '--database',
         required=True,
-        help='Path to BLAST database (e.g., /srv/projects/db/ncbi/preformatted/20260128/swissprot)'
+        help='Path to BLAST database (e.g., nr) and should also contain taxdb from NCBI (check $BLASTDBDIR env variable)'
     )
     
     parser.add_argument(
@@ -147,11 +146,12 @@ def main():
         default='prot',
         help='Database type (default: prot)'
     )
-    
+
+    newline="\n"
     parser.add_argument(
         '--outfmt',
-        default='>%a_%T %t\\n%s',
-        help='Output format string (default: >%a_%T %t\\n%s)'
+        default=f'>%a_%T %t{newline}%s',
+        help='Output format string (default: )'
     )
     
     parser.add_argument(
@@ -164,12 +164,8 @@ def main():
     
     # Determine output paths
     if os.path.isdir(args.output):
-        # If output is a directory, use default filenames
-        intermediate_file = os.path.join(args.output, 'euk_nr.txt')
         final_output = os.path.join(args.output, 'euk_nr.faa')
     else:
-        # Use output as prefix
-        intermediate_file = f"{args.output}.txt"
         final_output = f"{args.output}.faa"
     
     # Step 1: Read taxon IDs from input file
@@ -182,16 +178,15 @@ def main():
     run_blastdbcmd(
         taxon_ids,
         args.database,
-        intermediate_file,
+        final_output,
         dbtype=args.dbtype,
         outfmt=args.outfmt,
         target_only=not args.no_target_only
     )
     
-    # Step 3: Convert literal newlines to actual newlines
-    print(f"Processing output file...", file=sys.stderr)
-    convert_literal_newlines(intermediate_file, final_output)
-    
+#    # Step 3: Convert literal newlines to actual newlines
+#    print(f"Processing output file...", file=sys.stderr)
+#    convert_literal_newlines(intermediate_file, final_output)    
     print(f"Done! Final output: {final_output}", file=sys.stderr)
 
 

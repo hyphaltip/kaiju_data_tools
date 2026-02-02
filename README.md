@@ -14,17 +14,17 @@ A Python script for preparing non-redundant protein databases for Kaiju by extra
 ```
 
 #### Example
-
+ Need to download and compress all of https://ftp.ncbi.nih.gov/blast/db/nr.* and https://ftp.ncbi.nih.gov/blast/db/taxdb.tar.gz
+ Have `blastdbcmd` from NCBI BLAST in path.
 ```bash
 ./kaiju_nr_prepare.py \
-  -i kaiju-taxonlistEuk.tsv \
-  -d /srv/projects/db/ncbi/preformatted/20260128/swissprot \
+  -i kaiju-taxonlistEuk.tsv \ # or path to this
+  -d nr \ # Need to set BLASTDB variable or run in folder where taxdb and nr indexes are uncompressed 
   -o /scratch/euk_nr
 ```
 
 This will create:
-- `/scratch/euk_nr.txt` - intermediate output from blastdbcmd
-- `/scratch/euk_nr.faa` - final FASTA file with converted newlines
+- `/scratch/euk_nr.faa` -  FASTA file with converted accessions_taxon
 
 #### Options
 
@@ -32,12 +32,12 @@ This will create:
 - `-d, --database`: Path to BLAST database (required)
 - `-o, --output`: Output directory or file prefix (required)
 - `--dbtype`: Database type (default: prot)
-- `--outfmt`: Output format string (default: `>%a_%T %t\n%s`)
+- `--outfmt`: Output format string (default: `>%a_%T %t\n%s`) # note have to pass in \n as a formatted char not the literal \n,
 - `--no-target-only`: Do not use -target_only flag
 
 #### Requirements
 
-- Python 3.6+
+- Python 3.9+
 - NCBI BLAST+ toolkit (blastdbcmd must be in PATH)
 ### remove_acc.py
 
@@ -80,7 +80,7 @@ The script matches accessions against the first word in the FASTA header (the te
 This tool uses only Python 3 standard library, so no additional dependencies are required.
 
 **Requirements:**
-- Python 3.6 or higher
+- Python 3.9 or higher
 
 **Setup:**
 ```bash

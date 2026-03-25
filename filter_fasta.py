@@ -2,6 +2,7 @@
 """Filter FASTA sequences based on exclude patterns in the header line."""
 
 import argparse
+import io
 import sys
 
 
@@ -33,6 +34,18 @@ examples:
       < input.fasta > output.fasta
 """
 
+REPLACEMENT_CHAR = '\ufffd'
+
+
+def open_with_latin1_fallback(path):
+    """Open a file using UTF-8, replacing undecodable bytes with the Unicode replacement char."""
+    return open(path, 'r', encoding='utf-8', errors='replace')
+
+
+def wrap_stdin_bytes():
+    """Wrap sys.stdin.buffer so undecodable bytes become the Unicode replacement char."""
+    return io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -42,9 +55,9 @@ def parse_args():
     )
     parser.add_argument(
         '--input',
-        type=argparse.FileType('r'),
-        default=sys.stdin,
-        help='Input file (default: stdin)'
+        metavar='FILE',
+        default=None,
+        help='Input FASTA file (default: stdin)'
     )
     parser.add_argument(
         '--output',
@@ -95,8 +108,31 @@ def filter_fasta(infile, outfile, excluded_species, excluded_descriptions):
     header = None
     seq_lines = []
     skip = False
+    linenum = 0
 
     for line in infile:
+        linenum += 1
+        if REPLACEMENT_CHAR in line:
+            if line.startswith('>'):
+                print(
+                    f"WARNING: line {linenum}: non-UTF-8 bytes in header, skipping sequence: {line.rstrip()!r}",
+                    file=sys.stderr,
+                )
+                # flush pending record first
+                if header and not skip:
+                    outfile.write(header)
+                    outfile.writelines(seq_lines)
+                header = line
+                skip = True
+                seq_lines = []
+            else:
+                print(
+                    f"WARNING: line {linenum}: non-UTF-8 bytes in sequence line, skipping",
+                    file=sys.stderr,
+                )
+                skip = True
+            continue
+
         if line.startswith('>'):
             if header and not skip:
                 outfile.write(header)
@@ -124,11 +160,18 @@ def main():
         excluded_species = DEFAULT_EXCLUDED_SPECIES + (args.excluded_species or [])
         excluded_descriptions = DEFAULT_EXCLUDED_DESCRIPTIONS + (args.excluded_descriptions or [])
 
+    if args.input is None:
+        infile = wrap_stdin_bytes()
+        close_input = False
+    else:
+        infile = open_with_latin1_fallback(args.input)
+        close_input = True
+
     try:
-        filter_fasta(args.input, args.output, excluded_species, excluded_descriptions)
+        filter_fasta(infile, args.output, excluded_species, excluded_descriptions)
     finally:
-        if args.input is not sys.stdin:
-            args.input.close()
+        if close_input:
+            infile.close()
         if args.output is not sys.stdout:
             args.output.close()
 

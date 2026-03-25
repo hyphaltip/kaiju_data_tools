@@ -75,6 +75,49 @@ NP_987654321.2
 
 The script matches accessions against the first word in the FASTA header (the text immediately after the `>` character). Empty lines and lines starting with `#` are ignored.
 
+### filter_fasta.py
+
+Filter a FASTA file, excluding sequences based on species or description patterns in the header. Headers are expected in the format `>ID description [species]`.
+
+By default, excludes sequences from `[Homo sapiens]` and those with `immunoglobulin heavy chain` or `immunoglobulin light chain` in the description.
+
+**Usage:**
+```bash
+# From stdin/stdout
+./filter_fasta.py < input.fasta > output.fasta
+
+# With file arguments
+./filter_fasta.py --input input.fasta --output output.fasta
+```
+
+**Options:**
+- `--input`: Input FASTA file (default: stdin)
+- `--output`: Output FASTA file (default: stdout)
+- `--exclude-species SPECIES`: Exclude sequences containing this species string (case-sensitive, e.g. `[Homo sapiens]`). Can be specified multiple times.
+- `--exclude-description PATTERN`: Exclude sequences whose header contains this string (case-insensitive). Can be specified multiple times.
+- `--no-defaults`: Do not apply default exclusion patterns; only use patterns specified on the command line.
+
+**Examples:**
+```bash
+# Use defaults (exclude Homo sapiens and immunoglobulin heavy/light chain)
+./filter_fasta.py < input.fasta > output.fasta
+
+# Add an extra species exclusion on top of defaults
+./filter_fasta.py --exclude-species "[Mus musculus]" < input.fasta > output.fasta
+
+# Replace defaults entirely with custom patterns
+./filter_fasta.py --no-defaults \
+    --exclude-species "[Homo sapiens]" \
+    --exclude-description "hypothetical protein" \
+    < input.fasta > output.fasta
+
+# Multiple patterns
+./filter_fasta.py \
+    --exclude-species "[Mus musculus]" \
+    --exclude-description "immunoglobulin kappa chain" \
+    < input.fasta > output.fasta
+```
+
 ## Installation
 
 This tool uses only Python 3 standard library, so no additional dependencies are required.
